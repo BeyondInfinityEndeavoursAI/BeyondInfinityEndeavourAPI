@@ -3,17 +3,21 @@ import hashlib
 
 app = FastAPI()
 
-# Hash your secret key for security
+# Hash your secret key
 def hash_key(secret):
     return hashlib.sha256(secret.encode()).hexdigest()
 
-API_KEY = hash_key("Usnotthem") # Your secret key, now hashed
+API_KEY = hash_key("Usnotthem") # Your hashed key
 
 @app.middleware("http")
 async def verify_api_key(request: Request, call_next):
+    if request.url.path in ["/docs", "/openapi.json"]:
+        return await call_next(request)
+    
     key_header = request.headers.get("x-api-key")
     if not key_header or hash_key(key_header) != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    
     return await call_next(request)
 
 @app.get("/")
@@ -26,4 +30,6 @@ def ai_status():
 
 @app.get("/ai/vision")
 def ai_vision():
-    return {"message":"Quantum Twin Vision: 7% Global Market Control"}
+    return {"message": "Quantum Twin Vision: 7% Global Market Control"}
+
+
